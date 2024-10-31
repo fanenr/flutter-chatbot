@@ -2,6 +2,7 @@ import "../config.dart";
 
 import "package:flutter/material.dart";
 import "package:markdown/markdown.dart" as md;
+import "package:markdown/markdown.dart" hide Element;
 import "package:flutter_markdown/flutter_markdown.dart";
 import "package:flutter_highlighter/flutter_highlighter.dart";
 import "package:flutter_markdown_latex/flutter_markdown_latex.dart";
@@ -27,11 +28,29 @@ class MessageWidget extends StatelessWidget {
     required this.message,
   });
 
+  static final extensionSet = ExtensionSet(
+    <BlockSyntax>[
+      LatexBlockSyntax(),
+      const TableSyntax(),
+      const FootnoteDefSyntax(),
+      const FencedCodeBlockSyntax(),
+      const OrderedListWithCheckboxSyntax(),
+      const UnorderedListWithCheckboxSyntax(),
+    ],
+    <InlineSyntax>[
+      InlineHtmlSyntax(),
+      LatexInlineSyntax(),
+      StrikethroughSyntax(),
+      AutolinkExtensionSyntax()
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
-    final Color background;
-    final Alignment alignment;
     String content = message.text;
+    final Alignment alignment;
+    final Color background;
+
     final colorScheme = Theme.of(context).colorScheme;
     final markdownStyleSheet = MarkdownStyleSheet(
       codeblockDecoration: BoxDecoration(
@@ -39,6 +58,10 @@ class MessageWidget extends StatelessWidget {
         color: colorScheme.surfaceContainer,
       ),
     );
+
+    if (message.image != null) {
+      content = "![image](${message.image})\n\n${message.text}";
+    }
 
     switch (message.role) {
       case MessageRole.user:
@@ -50,10 +73,6 @@ class MessageWidget extends StatelessWidget {
         background = colorScheme.surfaceContainerHighest;
         alignment = Alignment.centerLeft;
         break;
-    }
-
-    if (message.image != null) {
-      content = "![image](${message.image})\n\n${message.text}";
     }
 
     return Container(
@@ -71,10 +90,7 @@ class MessageWidget extends StatelessWidget {
                 data: content,
                 shrinkWrap: true,
                 selectable: true,
-                extensionSet: md.ExtensionSet(
-                  [LatexBlockSyntax()],
-                  [LatexInlineSyntax()],
-                ),
+                extensionSet: extensionSet,
                 builders: {
                   "code": CodeElementBuilder(context: context),
                   "latex": LatexElementBuilder(textScaleFactor: 1.2),

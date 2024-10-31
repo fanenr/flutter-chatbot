@@ -167,7 +167,7 @@ class _ChatPageState extends State<ChatPage> {
                 _messages.length = 0;
               });
             },
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.delete),
           ),
           Builder(
             builder: (context) {
@@ -175,7 +175,7 @@ class _ChatPageState extends State<ChatPage> {
                 onPressed: () async {
                   await Config.show(context);
                 },
-                icon: const Icon(Icons.settings_outlined),
+                icon: const Icon(Icons.settings),
               );
             },
           )
