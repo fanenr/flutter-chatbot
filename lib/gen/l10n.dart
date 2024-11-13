@@ -310,6 +310,16 @@ class S {
     );
   }
 
+  /// `New Chat`
+  String get new_chat {
+    return Intl.message(
+      'New Chat',
+      name: 'new_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `API Url`
   String get api_url {
     return Intl.message(

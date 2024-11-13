@@ -31,6 +31,7 @@
     "link": "Link",
     "name": "Name",
     "new_api": "New API",
+    "new_chat": "New Chat",
     "api_url": "API Url",
     "api_key": "API Key",
     "model_list": "Model List",

@@ -53,6 +53,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "model_list": MessageLookupByLibrary.simpleMessage("模型列表"),
         "name": MessageLookupByLibrary.simpleMessage("名称"),
         "new_api": MessageLookupByLibrary.simpleMessage("新接口"),
+        "new_chat": MessageLookupByLibrary.simpleMessage("新对话"),
         "no_model": MessageLookupByLibrary.simpleMessage("无模型"),
         "not_implemented_yet": MessageLookupByLibrary.simpleMessage("还未实现"),
         "open": MessageLookupByLibrary.simpleMessage("打开"),

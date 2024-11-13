@@ -61,6 +61,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "model_list": MessageLookupByLibrary.simpleMessage("Model List"),
         "name": MessageLookupByLibrary.simpleMessage("Name"),
         "new_api": MessageLookupByLibrary.simpleMessage("New API"),
+        "new_chat": MessageLookupByLibrary.simpleMessage("New Chat"),
         "no_model": MessageLookupByLibrary.simpleMessage("no model"),
         "not_implemented_yet":
             MessageLookupByLibrary.simpleMessage("Not implemented yet"),

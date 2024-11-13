@@ -184,6 +184,7 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
       ref.read(chatsProvider.notifier).notify();
     }
     setState(() => CurrentChat.status = CurrentChatStatus.nothing);
+    ref.read(messageProvider(assistant).notifier).notify();
   }
 
   Future<void> _stopResponding(BuildContext context) async {

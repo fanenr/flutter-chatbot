@@ -65,9 +65,27 @@ class ChatPage extends ConsumerWidget {
             "ChatBot",
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          trailing: IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.of(context).pushNamed("/settings"),
+          ),
           contentPadding: const EdgeInsets.only(left: 16, right: 8),
         ),
         Divider(),
+        Container(
+          margin: EdgeInsets.only(left: 8, right: 8),
+          child: ListTile(
+            shape: StadiumBorder(),
+            title: Text(S.of(context).new_chat),
+            leading: const Icon(Icons.note_add_outlined),
+            tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            onTap: () {
+              CurrentChat.clear();
+              ref.read(modelProvider.notifier).notify();
+              ref.read(messagesProvider.notifier).notify();
+            },
+          ),
+        ),
         Container(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
@@ -82,43 +100,52 @@ class ChatPage extends ConsumerWidget {
               ref.watch(chatsProvider);
 
               return ListView.builder(
+                padding: EdgeInsets.only(left: 8, right: 8),
                 itemCount: Config.chats.length,
                 itemBuilder: (context, index) {
                   final chat = Config.chats[index];
-                  return ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16, right: 8),
-                    leading: const Icon(Icons.article),
-                    selected: CurrentChat.chat == chat,
-                    title: Text(
-                      chat.title,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(chat.time),
-                    onTap: () async {
-                      if (CurrentChat.chat == chat) return;
+                  return Column(
+                    children: [
+                      ListTile(
+                        dense: true,
+                        shape: StadiumBorder(),
+                        leading: const Icon(Icons.article),
+                        selected: CurrentChat.chat == chat,
+                        contentPadding:
+                            const EdgeInsets.only(left: 16, right: 8),
+                        title: Text(
+                          chat.title,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(chat.time),
+                        onTap: () async {
+                          if (CurrentChat.chat == chat) return;
 
-                      await CurrentChat.load(chat);
-                      ref.read(modelProvider.notifier).notify();
-                      ref.read(chatsProvider.notifier).notify();
-                      ref.read(messagesProvider.notifier).notify();
-                    },
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () async {
-                        if (CurrentChat.chat == chat) {
-                          CurrentChat.clear();
+                          await CurrentChat.load(chat);
                           ref.read(modelProvider.notifier).notify();
+                          ref.read(chatsProvider.notifier).notify();
                           ref.read(messagesProvider.notifier).notify();
-                        }
+                        },
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () async {
+                            if (CurrentChat.chat == chat) {
+                              CurrentChat.clear();
+                              ref.read(modelProvider.notifier).notify();
+                              ref.read(messagesProvider.notifier).notify();
+                            }
 
-                        await File(Config.chatFilePath(chat.fileName)).delete();
-                        ref.read(chatsProvider.notifier).notify();
-                        Config.chats.removeAt(index);
-                        await Config.save();
-                      },
-                    ),
+                            await File(Config.chatFilePath(chat.fileName))
+                                .delete();
+                            ref.read(chatsProvider.notifier).notify();
+                            Config.chats.removeAt(index);
+                            await Config.save();
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
               );
@@ -156,26 +183,19 @@ class ChatPage extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.swap_vert),
+            onPressed: () {},
             iconSize: 20,
+          ),
+        ]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_horiz),
             onPressed: () async {
               await showDialog(
                 context: context,
                 builder: (context) => CurrentChatSettings(),
               );
             },
-          ),
-        ]),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.note_add_outlined),
-              onPressed: () {
-                CurrentChat.clear();
-                ref.read(modelProvider.notifier).notify();
-                ref.read(messagesProvider.notifier).notify();
-              }),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).pushNamed("/settings"),
           ),
         ],
       ),
