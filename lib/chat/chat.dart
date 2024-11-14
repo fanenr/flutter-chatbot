@@ -198,13 +198,14 @@ class ChatPage extends ConsumerWidget {
 
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.swap_vert),
-                onSelected: (value) {
+                onSelected: (value) async {
                   CurrentChat.core = CoreConfig(
                     bot: CurrentChat.bot,
                     api: CurrentChat.api,
                     model: value,
                   );
                   ref.read(chatProvider.notifier).notify();
+                  await CurrentChat.save();
                 },
                 itemBuilder: (context) {
                   final models = Config.apis[CurrentChat.api]?.models ?? [];
