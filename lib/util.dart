@@ -98,7 +98,7 @@ class Util {
 
       case 1:
         if (!context.mounted) return;
-        copyText(context: context, text: link);
+        await copyText(context: context, text: link);
         break;
 
       case 2:

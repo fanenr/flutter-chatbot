@@ -100,6 +100,62 @@ class MessageWidget extends ConsumerWidget {
     await Util.copyText(context: context, text: message.text);
   }
 
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    InputWidget.unFocus();
+    final undo = UndoHistoryController();
+    final ctrl = TextEditingController(text: message.text);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.undo),
+                onPressed: () => undo.undo(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.redo),
+                onPressed: () => undo.redo(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_outlined),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+            title: Text(S.of(context).edit),
+          ),
+          body: Padding(
+            padding:
+                const EdgeInsets.only(top: 0, left: 16, right: 16, bottom: 0),
+            child: TextField(
+              expands: true,
+              maxLines: null,
+              controller: ctrl,
+              undoController: undo,
+              textAlign: TextAlign.start,
+              keyboardType: TextInputType.multiline,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: S.of(context).enter_your_message,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (!(result ?? false)) return;
+
+    message.text = ctrl.text;
+    ref.read(messageProvider(message).notifier).notify();
+    await CurrentChat.save();
+  }
+
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     if (!CurrentChat.isNothing) return;
     CurrentChat.messages.remove(message);
@@ -186,15 +242,17 @@ class MessageWidget extends ConsumerWidget {
       ListTile(
         minTileHeight: 48,
         shape: StadiumBorder(),
+        title: Text(S.of(context).edit),
+        leading: const Icon(Icons.edit_outlined),
+        onTap: () => Navigator.pop(context, MessageEvent.edit),
+      ),
+      ListTile(
+        minTileHeight: 48,
+        shape: StadiumBorder(),
         title: Text(S.of(context).delete),
         leading: const Icon(Icons.delete_outlined),
         onTap: () => Navigator.pop(context, MessageEvent.delete),
       ),
-      // ListTile(
-      //   title: Text(S.of(context).edit),
-      //   leading: const Icon(Icons.edit_outlined),
-      //   onTap: () => Navigator.pop(context, MessageEvent.edit),
-      // ),
     ];
 
     final event = await showModalBottomSheet<MessageEvent>(
@@ -213,22 +271,19 @@ class MessageWidget extends ConsumerWidget {
 
     switch (event) {
       case MessageEvent.copy:
-        _copy(context);
+        await _copy(context);
         break;
 
-      case MessageEvent.delete:
-        _delete(context, ref);
+      case MessageEvent.edit:
+        await _edit(context, ref);
         break;
 
       case MessageEvent.source:
-        _source(context);
+        await _source(context);
         break;
 
-      default:
-        Util.showSnackBar(
-          context: context,
-          content: Text(S.of(context).not_implemented_yet),
-        );
+      case MessageEvent.delete:
+        await _delete(context, ref);
         break;
     }
   }
@@ -345,6 +400,15 @@ class MessageWidget extends ConsumerWidget {
                 width: 36,
                 height: 36,
                 child: IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  iconSize: 18,
+                  onPressed: () async => await _edit(context, ref),
+                ),
+              ),
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
                   icon: const Icon(Icons.delete_outlined),
                   iconSize: 18,
                   onPressed: () async => await _delete(context, ref),
@@ -408,8 +472,8 @@ class CodeBlockBuilder extends MarkdownElementBuilder {
               Text(language),
               Expanded(child: SizedBox()),
               GestureDetector(
-                onTap: () {
-                  Util.copyText(
+                onTap: () async {
+                  await Util.copyText(
                     context: context,
                     text: content,
                   );

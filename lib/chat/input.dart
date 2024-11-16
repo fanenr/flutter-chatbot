@@ -136,7 +136,7 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
     );
 
     if (result == 1 && context.mounted) {
-      Util.copyText(context: context, text: info);
+      await Util.copyText(context: context, text: info);
     }
   }
 
