@@ -2,7 +2,7 @@
     <application
         android:label="ChatBot"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="${appIcon}">
         <activity
             android:taskAffinity=""
             android:exported="true"
