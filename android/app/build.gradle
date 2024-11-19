@@ -4,6 +4,12 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "cc.arthur63.chatbot"
     compileSdk = flutter.compileSdkVersion
@@ -25,11 +31,30 @@ android {
         applicationId = "cc.arthur63.chatbot"
     }
 
-    buildTypes {
+    signingConfigs {
         release {
+            keyAlias = keystoreProperties['keyAlias']
+            keyPassword = keystoreProperties['keyPassword']
+            storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword = keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            manifestPlaceholders = [appIcon: "@mipmap/ic_launcher_debug"]
+
             minifyEnabled true
             shrinkResources true
             signingConfig = signingConfigs.debug
+        }
+
+        release {
+            manifestPlaceholders = [appIcon: "@mipmap/ic_launcher"]
+            minifyEnabled true
+            shrinkResources true
+            signingConfig = signingConfigs.release
         }
     }
 }
