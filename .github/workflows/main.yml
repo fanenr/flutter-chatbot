@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 on:
   push:
-    branches:
-      - master # 这个是测试的，正常不需要这么频繁
+#    branches:
+#      - master # 这个是测试的，正常不需要这么频繁
     tags:
       - '*' # 每次推送tag 的时候触发
 
@@ -27,8 +27,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
-#          tag_name: ${{ github.ref }}
-          tag_name: v0.1.9  # 具体的版本号，测试
+          tag_name: ${{ github.ref }}
+#          tag_name: v0.1.9  # 具体的版本号，测试
           release_name: Release ${{ github.ref }}
           body: "Automated build for version ${{ github.ref }}"
         env:
