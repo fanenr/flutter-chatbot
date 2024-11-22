@@ -13,14 +13,17 @@
 // You should have received a copy of the GNU General Public License
 // along with ChatBot. If not, see <https://www.gnu.org/licenses/>.
 
-import "dart:io";
 import "dart:convert";
-import "package:flutter/material.dart";
+import "dart:io";
+
 import "package:archive/archive_io.dart";
 import "package:file_picker/file_picker.dart";
-import "package:path_provider/path_provider.dart";
+import "package:flutter/material.dart";
 import "package:flutter_highlighter/themes/atom-one-dark.dart";
 import "package:flutter_highlighter/themes/atom-one-light.dart";
+import "package:media_store_plus/media_store_plus.dart";
+import "package:path_provider/path_provider.dart";
+import "package:permission_handler/permission_handler.dart";
 
 class CoreConfig {
   String? bot;
@@ -155,6 +158,7 @@ class Config {
 
   static late final File _file;
   static late final String _dir;
+  static late final String _cacheDir;
   static late final String _sep;
 
   static const String _chatDir = "chat";
@@ -163,8 +167,11 @@ class Config {
 
   static Future<void> init() async {
     _sep = Platform.pathSeparator;
+    _cacheDir = (await getApplicationCacheDirectory()).path;
     if (Platform.isAndroid) {
       _dir = (await getExternalStorageDirectory())!.path;
+      MediaStore.ensureInitialized();
+      MediaStore.appFolder = "ChatBot";
     } else {
       _dir = (await getApplicationSupportDirectory()).path;
     }
@@ -256,11 +263,15 @@ class Config {
 
 class Backup {
   static Future<bool> exportConfig() async {
-    String? dir = await FilePicker.platform.getDirectoryPath();
-    if (dir == null) return false;
+    if (Platform.isAndroid) {
+      if (!(await Permission.storage.request().isGranted)) {
+        return false;
+      }
+    }
 
     final time = DateTime.now().millisecondsSinceEpoch.toString();
-    final path = "$dir${Config._sep}chatbot-backup-$time.zip";
+    String fileName = "chatbot-backup-$time.zip";
+    final path = "${Config._cacheDir}${Config._sep}$fileName";
 
     try {
       final dir = Directory(Config._dir);
@@ -276,7 +287,22 @@ class Backup {
       }
 
       await encoder.close();
+
+      var zipFile = File(path);
+      if (await zipFile.exists()) {
+        // 复制文件到下载目录
+        if (Platform.isAndroid) {
+          await MediaStore().saveFile(
+              tempFilePath: path,
+              dirType: DirType.download,
+              dirName: DirName.download);
+        } else {
+          final downloadDirectory = Directory(Config._dir);
+          zipFile.copy("${downloadDirectory.path}${Config._sep}$fileName");
+        }
+      }
     } catch (e) {
+      print(e);
       rethrow;
     }
 
