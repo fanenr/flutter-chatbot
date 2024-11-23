@@ -1,5 +1,5 @@
 name: chatbot
-version: 0.1.11+1
+version: 0.1.10+1
 description: ChatBot
 
 environment:
@@ -31,6 +31,9 @@ dependencies:
   flutter_markdown: ^0.7.4+2
   flutter_highlighter: ^0.1.1
   flutter_markdown_latex: ^0.3.4
+  permission_handler: ^11.3.1
+  #处理Android 端保存文件到公共目录权限的问题
+  media_store_plus: ^0.1.3
 
 dev_dependencies:
   flutter_test:
