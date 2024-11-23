@@ -206,6 +206,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.swap_vert),
                 onSelected: (value) async {
+                  InputWidget.unFocus();
                   CurrentChat.core = CoreConfig(
                     bot: CurrentChat.bot,
                     api: CurrentChat.api,

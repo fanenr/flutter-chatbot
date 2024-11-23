@@ -220,7 +220,7 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
 
     final times = ++_sendTimes;
     final scrollCtrl = widget.scrollCtrl;
-    final chatContext = _buildContext(messages);
+    final chatContext = buildChatContext(messages);
     final item = MessageItem(
       text: "",
       model: CurrentChat.model,
@@ -300,9 +300,12 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
   }
 }
 
-List<ChatMessage> _buildContext(List<Message> list) {
+List<ChatMessage> buildChatContext(List<Message> list) {
   final context = <ChatMessage>[];
-  final items = [for (final message in list) message.item];
+  final items = [
+    for (final message in list) message.item,
+  ];
+  if (items.last.role.isAssistant) items.removeLast();
 
   if (CurrentChat.systemPrompts != null) {
     context.add(ChatMessage.system(CurrentChat.systemPrompts!));

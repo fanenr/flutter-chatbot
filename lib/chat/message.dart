@@ -25,10 +25,12 @@ import "dart:async";
 import "dart:convert";
 import "package:flutter/material.dart";
 import "package:http/http.dart" as http;
+import "package:langchain/langchain.dart";
 import "package:markdown/markdown.dart" as md;
 import "package:audioplayers/audioplayers.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:flutter_markdown/flutter_markdown.dart";
+import "package:langchain_openai/langchain_openai.dart";
 import "package:markdown/markdown.dart" hide Element, Text;
 import "package:flutter_highlighter/flutter_highlighter.dart";
 import "package:flutter_markdown_latex/flutter_markdown_latex.dart";
@@ -278,6 +280,16 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
                 children: [
                   Row(
                     children: [
+                      if (role.isAssistant)
+                        SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: IconButton(
+                            icon: const Icon(Icons.sync_outlined),
+                            iconSize: 18,
+                            onPressed: () async => await _reanswer(context),
+                          ),
+                        ),
                       SizedBox(
                         width: 36,
                         height: 36,
@@ -285,24 +297,6 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
                           icon: const Icon(Icons.paste_rounded),
                           iconSize: 16,
                           onPressed: () async => await _copy(context),
-                        ),
-                      ),
-                      // SizedBox(
-                      //   width: 36,
-                      //   height: 36,
-                      //   child: IconButton(
-                      //     icon: const Icon(Icons.sync_outlined),
-                      //     iconSize: 18,
-                      //     onPressed: () async => await _reanswer(context, ref),
-                      //   ),
-                      // ),
-                      SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: IconButton(
-                          icon: const Icon(Icons.code_rounded),
-                          iconSize: 18,
-                          onPressed: () async => await _source(context),
                         ),
                       ),
                       SizedBox(
@@ -323,29 +317,37 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
                           onPressed: () async => await _delete(context),
                         ),
                       ),
-                      const SizedBox(width: 8),
                     ],
                   ),
                   if (role.isAssistant && message.list.length > 1)
                     Row(
                       children: [
+                        const SizedBox(width: 8),
                         SizedBox(
-                          width: 36,
-                          height: 36,
+                          width: 32,
+                          height: 32,
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back_ios_rounded),
-                            iconSize: 18,
-                            onPressed: () {},
+                            iconSize: 16,
+                            onPressed: () {
+                              if (message.index > 0) {
+                                setState(() => message.index--);
+                              }
+                            },
                           ),
                         ),
-                        Text("1/3"),
+                        Text("${message.index + 1}/${message.list.length}"),
                         SizedBox(
-                          width: 36,
-                          height: 36,
+                          width: 32,
+                          height: 32,
                           child: IconButton(
                             icon: const Icon(Icons.arrow_forward_ios_rounded),
-                            iconSize: 18,
-                            onPressed: () {},
+                            iconSize: 16,
+                            onPressed: () {
+                              if (message.index + 1 < message.list.length) {
+                                setState(() => message.index++);
+                              }
+                            },
                           ),
                         ),
                       ],
@@ -444,8 +446,23 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
   Future<void> _delete(BuildContext context) async {
     if (!CurrentChat.chatStatus.isNothing) return;
     if (!CurrentChat.ttsStatus.isNothing) return;
-    CurrentChat.messages.remove(widget.message);
-    ref.read(messagesProvider.notifier).notify();
+
+    final message = widget.message;
+    final length = message.list.length;
+
+    if (length == 1) {
+      CurrentChat.messages.remove(message);
+      ref.read(messagesProvider.notifier).notify();
+    } else {
+      var index = message.index;
+      message.list.removeAt(index++);
+      setState(() {
+        if (index == length) {
+          message.index--;
+        }
+      });
+    }
+
     await CurrentChat.save();
   }
 
@@ -508,6 +525,67 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
 
   Future<void> _reanswer(BuildContext context) async {
     if (!CurrentChat.chatStatus.isNothing) return;
+
+    final messages = CurrentChat.messages;
+    final apiUrl = CurrentChat.apiUrl;
+    final apiKey = CurrentChat.apiKey;
+    final model = CurrentChat.model;
+
+    if (apiUrl == null || apiKey == null || model == null) {
+      Util.showSnackBar(
+        context: context,
+        content: Text(S.of(context).setup_bot_api_first),
+      );
+      return;
+    }
+
+    final chatContext = buildChatContext(messages);
+    final item = MessageItem(
+      text: "",
+      model: CurrentChat.model,
+      role: MessageRole.assistant,
+      time: Util.formatDateTime(DateTime.now()),
+    );
+
+    final message = widget.message;
+    setState(() {
+      message.list.add(item);
+      message.index = message.list.length - 1;
+      CurrentChat.chatStatus = CurrentChatStatus.responding;
+    });
+
+    try {
+      final llm = ChatOpenAI(
+        apiKey: apiKey,
+        baseUrl: apiUrl,
+        defaultOptions: ChatOpenAIOptions(
+          model: model,
+          maxTokens: CurrentChat.maxTokens,
+          temperature: CurrentChat.temperature,
+        ),
+      );
+
+      if (CurrentChat.stream ?? true) {
+        final stream = llm.stream(PromptValue.chat(chatContext));
+        await for (final chunk in stream) {
+          setState(() => item.text += chunk.output.content);
+        }
+      } else {
+        final result = await llm.invoke(PromptValue.chat(chatContext));
+        setState(() => item.text += result.output.content);
+      }
+    } catch (e) {
+      if (context.mounted) await Util.handleError(context: context, error: e);
+      if (item.text.isEmpty) {
+        setState(() {
+          message.list.removeLast();
+          message.index--;
+        });
+      }
+    }
+
+    setState(() => CurrentChat.chatStatus = CurrentChatStatus.nothing);
+    await CurrentChat.save();
   }
 
   Future<void> _longPress(BuildContext context) async {
@@ -531,14 +609,6 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
         leading: const Icon(Icons.copy_all),
         onTap: () => Navigator.pop(context, _LongPressEvent.copy),
       ),
-      // if (CurrentChat.messages.lastOrNull == message)
-      //   ListTile(
-      //     minTileHeight: 48,
-      //     shape: StadiumBorder(),
-      //     title: Text(S.of(context).reanswer),
-      //     leading: const Icon(Icons.sync_outlined),
-      //     onTap: () => Navigator.pop(context, MessageEvent.reanswer),
-      //   ),
       ListTile(
         minTileHeight: 48,
         shape: StadiumBorder(),
@@ -600,12 +670,10 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
 }
 
 enum _LongPressEvent {
-  reanswer,
   source,
   delete,
   copy,
   edit,
-  tts,
 }
 
 final _extensionSet = ExtensionSet(
