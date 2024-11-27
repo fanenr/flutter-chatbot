@@ -1,3 +1,12 @@
+0.2.3 (2024-11-27)
+
+    * Add: A new app icon.
+    * Improve: Remove unnecessary animations.
+
+
+    * 增加：新的应用图标
+    * 改进：删除不必要的动画
+
 0.2.2 (2024-11-25)
 
     * Add: Chat clone and clear functionality.
