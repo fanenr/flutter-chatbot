@@ -62,15 +62,15 @@
     "choose_api": "Choose API",
     "choose_model": "Choose Model",
     "quality": "Quality",
-    "minWidth": "Minimal Width",
-    "minHeight": "Minimal Height",
+    "min_width": "Minimal Width",
+    "min_height": "Minimal Height",
     "export_config": "Export Config",
     "import_config": "Import Config",
 
     "empty": "Empty",
     "enable": "Enable",
     "please_input": "Please Input",
-    "img_enable": "The original image will be used if compression fails.",
+    "image_enable_hint": "The original image will be used if compression fails.",
     "image_hint": "The quality setting should be between 1 and 100, with lower values resulting in higher compression. Minimum width and minimum height restrict image resizing. Leave these fields blank if you're unsure.",
     "config_hint": "To avoid export failures, it's recommended to export the configuration to the Documents directory, or create a ChatBot subdirectory within your Downloads folder.",
 

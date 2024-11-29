@@ -39,13 +39,14 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
     ref.watch(apisProvider);
 
     final s = S.of(context);
+    const padding = EdgeInsets.only(left: 24, right: 24);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return ListView(
       children: [
         const SizedBox(height: 16),
         Padding(
-          padding: const EdgeInsets.only(left: 16),
+          padding: padding,
           child: Text(
             s.default_config,
             style: TextStyle(color: primaryColor),
@@ -53,6 +54,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         ListTile(
           title: Text(s.bot),
+          contentPadding: padding,
           subtitle: Text(Config.core.bot ?? s.empty),
           onTap: () async {
             final bot = await _select(
@@ -69,6 +71,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         const Divider(height: 1),
         ListTile(
           title: Text(s.api),
+          contentPadding: padding,
           subtitle: Text(Config.core.api ?? s.empty),
           onTap: () async {
             final api = await _select(
@@ -79,12 +82,14 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
             if (api == null) return;
 
             setState(() => Config.core.api = api);
+            ref.read(chatProvider.notifier).notify();
             await Config.save();
           },
         ),
         const Divider(height: 1),
         ListTile(
           title: Text(s.model),
+          contentPadding: padding,
           subtitle: Text(Config.core.model ?? s.empty),
           onTap: () async {
             final models = Config.apis[Config.core.api]?.models;
@@ -104,7 +109,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.only(left: 16),
+          padding: padding,
           child: Text(
             s.text_to_speech,
             style: TextStyle(color: primaryColor),
@@ -112,6 +117,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         ListTile(
           title: Text(s.api),
+          contentPadding: padding,
           subtitle: Text(Config.tts.api ?? s.empty),
           onTap: () async {
             final api = await _select(
@@ -128,6 +134,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         const Divider(height: 1),
         ListTile(
           title: Text(s.model),
+          contentPadding: padding,
           subtitle: Text(Config.tts.model ?? s.empty),
           onTap: () async {
             final models = Config.apis[Config.tts.api]?.models;
@@ -147,6 +154,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         const Divider(height: 1),
         ListTile(
           title: Text(s.voice),
+          contentPadding: padding,
           subtitle: Text(Config.tts.voice ?? s.empty),
           onTap: () async {
             var text = await _input(
@@ -166,7 +174,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.only(left: 16),
+          padding: padding,
           child: Text(
             s.chat_image_compress,
             style: TextStyle(color: primaryColor),
@@ -174,9 +182,9 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         CheckboxListTile(
           title: Text(s.enable),
+          contentPadding: padding,
           value: Config.img.enable ?? true,
-          subtitle: Text(s.img_enable),
-          contentPadding: const EdgeInsets.only(left: 16, right: 8),
+          subtitle: Text(s.image_enable_hint),
           onChanged: (value) async {
             setState(() => Config.img.enable = value);
             await Config.save();
@@ -185,6 +193,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         const Divider(height: 1),
         ListTile(
           title: Text(s.quality),
+          contentPadding: padding,
           subtitle: Text(Config.img.quality?.toString() ?? s.empty),
           onTap: () async {
             var text = await _input(
@@ -207,11 +216,12 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         const Divider(height: 1),
         ListTile(
-          title: Text(s.minWidth),
+          title: Text(s.min_width),
+          contentPadding: padding,
           subtitle: Text(Config.img.minWidth?.toString() ?? s.empty),
           onTap: () async {
             var text = await _input(
-              title: s.minWidth,
+              title: s.min_width,
               hint: s.please_input,
               text: Config.img.minWidth?.toString(),
             );
@@ -230,11 +240,12 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         const Divider(height: 1),
         ListTile(
-          title: Text(s.minHeight),
+          title: Text(s.min_height),
+          contentPadding: padding,
           subtitle: Text(Config.img.minHeight?.toString() ?? s.empty),
           onTap: () async {
             var text = await _input(
-              title: s.minHeight,
+              title: s.min_height,
               hint: s.please_input,
               text: Config.img.minHeight?.toString(),
             );
@@ -276,7 +287,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.only(left: 16),
+          padding: padding,
           child: Text(
             s.config_import_export,
             style: TextStyle(color: primaryColor),
@@ -284,6 +295,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         ),
         ListTile(
           title: Text(s.import_config),
+          contentPadding: padding,
           onTap: () async {
             try {
               final result = await Backup.importConfig();
@@ -313,6 +325,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
         const Divider(height: 1),
         ListTile(
           title: Text(s.export_config),
+          contentPadding: padding,
           onTap: () async {
             try {
               final result = await Backup.exportConfig();
@@ -381,19 +394,19 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Text(
                 title,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               const Padding(
                 padding: EdgeInsets.only(left: 24, right: 24),
                 child: Divider(),
               ),
               ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.5),
+                    maxHeight: MediaQuery.of(context).size.height * 0.6),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: list.length,
@@ -410,7 +423,6 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
                 padding: EdgeInsets.only(left: 24, right: 24),
                 child: Divider(),
               ),
-              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -426,7 +438,7 @@ class _ConfigTabState extends ConsumerState<ConfigTab> {
                   const SizedBox(width: 24),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -496,7 +508,7 @@ class _InputDialogState extends State<_InputDialog> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.only(left: 24, right: 24),
           child: TextField(
@@ -507,7 +519,7 @@ class _InputDialogState extends State<_InputDialog> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -523,7 +535,7 @@ class _InputDialogState extends State<_InputDialog> {
             const SizedBox(width: 24),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
       ],
     );
   }

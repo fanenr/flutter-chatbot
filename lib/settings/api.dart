@@ -332,17 +332,17 @@ class ApiSettingsState extends ConsumerState<ApiSettings> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Text(S.of(context).select_models,
                   style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               const Padding(
                 padding: EdgeInsets.only(left: 24, right: 24),
                 child: Divider(),
               ),
               ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.5),
+                    maxHeight: MediaQuery.of(context).size.height * 0.6),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: chosen.length,
@@ -359,7 +359,6 @@ class ApiSettingsState extends ConsumerState<ApiSettings> {
                 padding: EdgeInsets.only(left: 24, right: 24),
                 child: Divider(),
               ),
-              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -378,7 +377,7 @@ class ApiSettingsState extends ConsumerState<ApiSettings> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
             ],
           ),
         ),

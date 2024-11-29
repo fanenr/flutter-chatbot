@@ -581,20 +581,20 @@ class S {
   }
 
   /// `Minimal Width`
-  String get minWidth {
+  String get min_width {
     return Intl.message(
       'Minimal Width',
-      name: 'minWidth',
+      name: 'min_width',
       desc: '',
       args: [],
     );
   }
 
   /// `Minimal Height`
-  String get minHeight {
+  String get min_height {
     return Intl.message(
       'Minimal Height',
-      name: 'minHeight',
+      name: 'min_height',
       desc: '',
       args: [],
     );
@@ -651,10 +651,10 @@ class S {
   }
 
   /// `The original image will be used if compression fails.`
-  String get img_enable {
+  String get image_enable_hint {
     return Intl.message(
       'The original image will be used if compression fails.',
-      name: 'img_enable',
+      name: 'image_enable_hint',
       desc: '',
       args: [],
     );

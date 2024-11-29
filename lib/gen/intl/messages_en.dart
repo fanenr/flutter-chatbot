@@ -82,10 +82,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "gallery": MessageLookupByLibrary.simpleMessage("Gallery"),
         "image_compress_failed":
             MessageLookupByLibrary.simpleMessage("Failed to comprese image"),
+        "image_enable_hint": MessageLookupByLibrary.simpleMessage(
+            "The original image will be used if compression fails."),
         "image_hint": MessageLookupByLibrary.simpleMessage(
             "The quality setting should be between 1 and 100, with lower values resulting in higher compression. Minimum width and minimum height restrict image resizing. Leave these fields blank if you\'re unsure."),
-        "img_enable": MessageLookupByLibrary.simpleMessage(
-            "The original image will be used if compression fails."),
         "import_config": MessageLookupByLibrary.simpleMessage("Import Config"),
         "imported_successfully":
             MessageLookupByLibrary.simpleMessage("Imported Successfully"),
@@ -95,8 +95,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Invalid Temperature"),
         "link": MessageLookupByLibrary.simpleMessage("Link"),
         "max_tokens": MessageLookupByLibrary.simpleMessage("Max Tokens"),
-        "minHeight": MessageLookupByLibrary.simpleMessage("Minimal Height"),
-        "minWidth": MessageLookupByLibrary.simpleMessage("Minimal Width"),
+        "min_height": MessageLookupByLibrary.simpleMessage("Minimal Height"),
+        "min_width": MessageLookupByLibrary.simpleMessage("Minimal Width"),
         "model": MessageLookupByLibrary.simpleMessage("Model"),
         "model_list": MessageLookupByLibrary.simpleMessage("Model List"),
         "name": MessageLookupByLibrary.simpleMessage("Name"),

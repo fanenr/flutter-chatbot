@@ -62,15 +62,15 @@
     "choose_api": "选择接口",
     "choose_model": "选择模型",
     "quality": "质量",
-    "minWidth": "最小宽度",
-    "minHeight": "最小高度",
+    "min_width": "最小宽度",
+    "min_height": "最小高度",
     "export_config": "导出配置",
     "import_config": "导入配置",
 
     "empty": "空",
     "enable": "启用",
     "please_input": "请输入",
-    "img_enable": "压缩失败将使用原图",
+    "image_enable_hint": "压缩失败将使用原图",
     "image_hint": "质量范围应在 1-100，质量越低压缩率越高。最小宽度与最小高度用于限制图片缩放，如不清楚，请留空。",
     "config_hint": "为避免导出失败，建议将配置导出到 Documents 目录，或在 Download 下创建 ChatBot 子目录。",
 
