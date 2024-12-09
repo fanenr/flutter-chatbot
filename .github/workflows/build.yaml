@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
   workflow_dispatch: # 手动触发
+    inputs:
+        tag:
+            description: 'Tag to release'
+            required: true
 
 permissions:
   contents: write
@@ -155,14 +159,28 @@ jobs:
         with:
           path: ./flutter-chatbot-release
           merge-multiple: true
-      - name: Install dependencies
-        run: sudo apt-get install tree -y
-      - name: Upload Release
-        uses: ncipollo/release-action@v1
+      - name: ChangeLog
+        id: changelog
+        run: |
+          echo "latest<<EOF" >> $GITHUB_OUTPUT
+          awk '/^[0-9]/{i++}i==1' CHANGELOG | sed '${/^$/d}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        # 手动触发才使用输入的tag
+        tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || null }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN  }}
-          omitBodyDuringUpdate: true
-          omitNameDuringUpdate: true
-          omitPrereleaseDuringUpdate: true
-          allowUpdates: true
-          artifacts: flutter-chatbot-release/*
+          files: flutter-chatbot-release/*
+          body: ${{ steps.changelog.outputs.latest }}
+#       - name: Install dependencies
+#         run: sudo apt-get install tree -y
+#       - name: Upload Release
+#         uses: ncipollo/release-action@v1
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN  }}
+#           omitBodyDuringUpdate: true
+#           omitNameDuringUpdate: true
+#           omitPrereleaseDuringUpdate: true
+#           allowUpdates: true
+#           artifacts: flutter-chatbot-release/*
