@@ -5,10 +5,6 @@ on:
     tags:
       - "v*"
   workflow_dispatch: # 手动触发
-    inputs:
-        tag:
-            description: 'Tag to release'
-            required: true
 
 permissions:
   contents: write
@@ -169,7 +165,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         # 手动触发才使用输入的tag
-        tag: ${{ github.event.inputs.tag }}  # 使用手动输入的标签，测试
+#         tag: ''  # 使用手动输入的标签，测试
         with:
           files: flutter-chatbot-release/*
           body: ${{ steps.changelog.outputs.latest }}
