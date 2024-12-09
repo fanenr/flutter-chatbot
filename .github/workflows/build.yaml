@@ -9,53 +9,6 @@ permissions:
   contents: write
 
 jobs:
-#   build-apk:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Clone repository
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-#
-#       - name: Setup JDK17
-#         uses: actions/setup-java@v4
-#         with:
-#           distribution: "zulu"
-#           java-version: "17"
-#
-#       - name: Setup Flutter
-#         uses: subosito/flutter-action@v2
-#         with:
-#           flutter-version: 3.24.5
-#
-#       - name: Setup signing
-#         run: |
-#           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
-#           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-#           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-#           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-#           echo "storeFile=keystore.jks" >> android/key.properties
-#
-#       - name: Build
-#         run: |
-#           flutter pub get
-#           flutter build apk --target-platform android-arm64
-#
-#       - name: ChangeLog
-#         id: changelog
-#         run: |
-#           echo "latest<<EOF" >> $GITHUB_OUTPUT
-#           awk '/^[0-9]/{i++}i==1' CHANGELOG | sed '${/^$/d}' >> $GITHUB_OUTPUT
-#           echo "EOF" >> $GITHUB_OUTPUT
-#
-#       - name: Release
-#         uses: softprops/action-gh-release@v2
-#         with:
-#           files: |
-#             build/app/outputs/flutter-apk/app-release.apk
-#             build/app/outputs/flutter-apk/app-release.apk.sha1
-#           body: ${{ steps.changelog.outputs.latest }}
-
   
   build-linux-and-android:
     runs-on: ubuntu-latest
@@ -166,14 +119,3 @@ jobs:
         with:
           files: flutter-chatbot-release/*
           body: ${{ steps.changelog.outputs.latest }}
-#       - name: Install dependencies
-#         run: sudo apt-get install tree -y
-#       - name: Upload Release
-#         uses: ncipollo/release-action@v1
-#         with:
-#           token: ${{ secrets.GITHUB_TOKEN  }}
-#           omitBodyDuringUpdate: true
-#           omitNameDuringUpdate: true
-#           omitPrereleaseDuringUpdate: true
-#           allowUpdates: true
-#           artifacts: flutter-chatbot-release/*
