@@ -109,11 +109,6 @@ jobs:
         run: |
           flutter build apk --release
           flutter build apk --release --split-per-abi
-#         env:
-#           KEYSTORE: flutter-chatbot.jks
-#           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-#           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-#           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD}}
       - name: Android Release
         uses: actions/upload-artifact@v4
         with:
@@ -165,7 +160,7 @@ jobs:
       - name: Upload Release
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GIT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN  }}
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           omitPrereleaseDuringUpdate: true
