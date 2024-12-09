@@ -71,7 +71,7 @@ jobs:
       - name: Update dependencies
         run: sudo apt-get update
       - name: Install dependencies
-        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-0 libgtk-3-dev libblkid1 liblzma5
+        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-0 libgtk-3-dev libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
       - name: Install project dependencies
         run: flutter pub get
       - name: Build artifacts
@@ -134,60 +134,16 @@ jobs:
         run: flutter config --enable-windows-desktop
       - name: Build artifacts
         run: flutter build windows --release
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-            node-version: 20
-      - name: install evb
-        run: npm install enigmavirtualbox -g
-      - name: create evb file
-        run: dart .\dev\windows_evb_config_generator.dart
-      - name: build single exe file
-        run: enigmavirtualbox cli "flutter-chatbot.evb"
-      - name: Windows Release
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-chatbot-win
-          path: flutter-chatbot.exe
-
-  build-macos-and-ios:
-    runs-on: macos-14
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          architecture: arm64
-          flutter-version: 3.24.5
-      - name: Install project dependencies
-        run: flutter pub get
-      - name: Enable macOS build
-        run: flutter config --enable-macos-desktop
-      - name: Build artifacts
-        run: flutter build macos --release
-      - name: install npm
-        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - name: install appdmg
-        run: npm install -g appdmg
-      - name: build dmg
-        run: appdmg ./dmg/config.json ./build/macos/Build/Products/Release/flutter-chatbot.dmg
-      - name: macOS Release
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-chatbot-macos
-          path: build/macos/Build/Products/Release/flutter-chatbot.dmg
-      - name: Build ios
+      - name: Create ZIP archive
         run: |
-          flutter build ios --release --no-codesign
-          ln -sf ./build/ios/iphoneos Payload
-          zip -r9 flutter-chatbot-release.ipa Payload/runner.app
-      - name: ios Release
+            cd build\windows\x64\release\runner
+            tar -cvzf ..\..\..\flutter_chatbot_win.zip .\
+
+      - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-chatbot-ios
-          path: flutter-chatbot-release.ipa
-
+            name: flutter-chatbot-win
+            path: build\windows\flutter_chatbot_win.zip
 
   upload:
     runs-on: ubuntu-latest
@@ -195,7 +151,6 @@ jobs:
     needs:
       - build-linux-and-android
       - build-windows
-      - build-macos-and-ios
     steps:
       - uses: actions/download-artifact@v4
         with:
