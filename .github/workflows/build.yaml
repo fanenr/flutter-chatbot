@@ -140,8 +140,8 @@ jobs:
         run: flutter build windows --release
       - name: Create ZIP archive
         run: |
-          cd build\windows\x64\Release\runner
-          Compress-Archive -Path * -DestinationPath ../../../../../flutter_chatbot_win.zip
+          cd build\windows\x64\runner\Release
+          Compress-Archive -Path * -DestinationPath ../../../flutter_chatbot_win.zip
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
