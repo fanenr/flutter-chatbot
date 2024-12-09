@@ -44,7 +44,7 @@ enum ChatStatus {
   bool get isResponding => this == ChatStatus.responding;
 }
 
-class CurrentChat {
+class Current {
   static File? file;
   static Uint8List? image;
   static ChatConfig? chat;
@@ -133,22 +133,23 @@ class CurrentChat {
   static int? get maxTokens => _bot?.maxTokens;
   static double? get temperature => _bot?.temperature;
   static String? get systemPrompts => _bot?.systemPrompts;
+
+  static bool get isOkToChat => api != null && model != null;
 }
 
-class CurrentChatSettings extends ConsumerStatefulWidget {
-  const CurrentChatSettings({super.key});
+class ChatSettings extends ConsumerStatefulWidget {
+  const ChatSettings({super.key});
 
   @override
-  ConsumerState<CurrentChatSettings> createState() =>
-      _CurrentChatSettingsState();
+  ConsumerState<ChatSettings> createState() => ChatSettingsState();
 }
 
-class _CurrentChatSettingsState extends ConsumerState<CurrentChatSettings> {
-  String? _bot = CurrentChat.bot;
-  String? _api = CurrentChat.api;
-  String? _model = CurrentChat.model;
+class ChatSettingsState extends ConsumerState<ChatSettings> {
+  String? _bot = Current.bot;
+  String? _api = Current.api;
+  String? _model = Current.model;
   final TextEditingController _titleCtrl =
-      TextEditingController(text: CurrentChat.title);
+      TextEditingController(text: Current.title);
 
   @override
   void dispose() {
@@ -286,10 +287,10 @@ class _CurrentChatSettingsState extends ConsumerState<CurrentChatSettings> {
 
   void _save() {
     final title = _titleCtrl.text;
-    final oldModel = CurrentChat.model;
-    final oldTitle = CurrentChat.title;
+    final oldModel = Current.model;
+    final oldTitle = Current.title;
 
-    if (title.isEmpty && CurrentChat.hasChat) {
+    if (title.isEmpty && Current.hasChat) {
       Util.showSnackBar(
         context: context,
         content: Text(S.of(context).enter_a_title),
@@ -297,20 +298,20 @@ class _CurrentChatSettingsState extends ConsumerState<CurrentChatSettings> {
       return;
     }
 
-    if (CurrentChat.hasChat) {
-      CurrentChat.chat!.title = title;
+    if (Current.hasChat) {
+      Current.chat!.title = title;
     } else if (title.isNotEmpty) {
-      CurrentChat.initChat(title);
+      Current.initChat(title);
     }
 
-    CurrentChat.core = CoreConfig(
+    Current.core = CoreConfig(
       bot: _bot,
       api: _api,
       model: _model,
     );
-    CurrentChat.save();
+    Current.save();
 
-    if (title != oldTitle && CurrentChat.hasFile) {
+    if (title != oldTitle && Current.hasFile) {
       ref.read(chatsProvider.notifier).notify();
     }
     if (title != oldTitle || _model != oldModel) {
