@@ -169,7 +169,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         # 手动触发才使用输入的tag
-        tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || null }}
+        tag: ${{ github.event.inputs.tag }}  # 使用手动输入的标签，测试
         with:
           files: flutter-chatbot-release/*
           body: ${{ steps.changelog.outputs.latest }}
