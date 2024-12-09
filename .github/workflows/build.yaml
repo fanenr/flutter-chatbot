@@ -165,8 +165,8 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         # 手动触发才使用输入的tag
-#         tag: ''  # 使用手动输入的标签，测试
         with:
+          tag: '0.2.8'  # 使用手动输入的标签，测试
           files: flutter-chatbot-release/*
           body: ${{ steps.changelog.outputs.latest }}
 #       - name: Install dependencies
