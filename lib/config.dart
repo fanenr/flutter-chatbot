@@ -100,6 +100,9 @@ class Config {
     }
   }
 
+  static bool get isOkToTts =>
+      tts.api != null && tts.model != null && tts.voice != null;
+
   static void _initDir() {
     final imagePath = "$_dir$_sep$_imageDir";
     final imageDir = Directory(imagePath);

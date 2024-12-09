@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with ChatBot. If not, see <https://www.gnu.org/licenses/>.
 
+import "llm.dart";
 import "chat.dart";
 import "input.dart";
 import "current.dart";
@@ -21,19 +22,14 @@ import "../config.dart";
 import "../gen/l10n.dart";
 import "../markdown/all.dart";
 
-import "dart:io";
 import "dart:async";
 import "dart:convert";
 import "dart:typed_data";
 import "package:flutter/material.dart";
-import "package:http/http.dart" as http;
-import "package:langchain/langchain.dart";
 import "package:animate_do/animate_do.dart";
-import "package:audioplayers/audioplayers.dart";
 import "package:flutter_spinkit/flutter_spinkit.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:flutter_markdown/flutter_markdown.dart";
-import "package:langchain_openai/langchain_openai.dart";
 
 final messageProvider = NotifierProvider.autoDispose
     .family<MessageNotifier, void, Message>(MessageNotifier.new);
@@ -148,10 +144,6 @@ class MessageWidget extends ConsumerStatefulWidget {
 }
 
 class _MessageWidgetState extends ConsumerState<MessageWidget> {
-  http.Client? ttsClient;
-  http.Client? chatClient;
-  static final AudioPlayer _player = AudioPlayer();
-
   @override
   Widget build(BuildContext context) {
     final message = widget.message;
@@ -247,8 +239,8 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
               },
             ),
           ),
-          if (CurrentChat.messages.lastOrNull == message &&
-              CurrentChat.chatStatus.isNothing) ...[
+          if (Current.messages.lastOrNull == message &&
+              Current.chatStatus.isNothing) ...[
             const SizedBox(height: 4),
             FadeIn(child: _buildToolBar(role)),
           ],
@@ -270,63 +262,51 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                item.model ?? CurrentChat.model ?? S.of(context).no_model,
+                item.model ?? Current.model ?? S.of(context).no_model,
                 style: Theme.of(context).textTheme.titleSmall,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
                 item.time ??
-                    CurrentChat.chat?.time ??
+                    Current.chat?.time ??
                     Util.formatDateTime(DateTime.now()),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
           ),
         ),
-        if (message.list.length > 1) ...[
+        if (message.list.length > 1 &&
+            (Current.chatStatus.isNothing ||
+                message != Current.messages.lastOrNull)) ...[
           const SizedBox(width: 4),
-          if (message != CurrentChat.messages.last ||
-              CurrentChat.chatStatus.isNothing) ...[
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_rounded),
-                iconSize: 16,
-                onPressed: () {
-                  if (item == message.list.first) return;
-                  setState(() => message.index--);
-                  CurrentChat.save();
-                },
-              ),
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded),
+              iconSize: 16,
+              onPressed: () {
+                if (item == message.list.first) return;
+                setState(() => message.index--);
+                Current.save();
+              },
             ),
-            Text("${message.index + 1}/${message.list.length}"),
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_forward_ios_rounded),
-                iconSize: 16,
-                onPressed: () {
-                  if (item == message.list.last) return;
-                  setState(() => message.index++);
-                  CurrentChat.save();
-                },
-              ),
+          ),
+          Text("${message.index + 1}/${message.list.length}"),
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_forward_ios_rounded),
+              iconSize: 16,
+              onPressed: () {
+                if (item == message.list.last) return;
+                setState(() => message.index++);
+                Current.save();
+              },
             ),
-          ],
-          if (message == CurrentChat.messages.last &&
-              CurrentChat.chatStatus.isResponding)
-            SizedBox(
-              width: 36,
-              height: 36,
-              child: IconButton(
-                icon: const Icon(Icons.pause_outlined),
-                iconSize: 18,
-                onPressed: _reanswer,
-              ),
-            ),
+          ),
         ],
       ],
     );
@@ -342,7 +322,7 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
             width: 36,
             height: 26,
             child: IconButton(
-              icon: Icon(switch (CurrentChat.ttsStatus) {
+              icon: Icon(switch (Current.ttsStatus) {
                 TtsStatus.loading => Icons.cancel_outlined,
                 TtsStatus.nothing => Icons.volume_up_outlined,
                 TtsStatus.playing => Icons.pause_circle_outlined,
@@ -398,23 +378,16 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
   }
 
   Future<void> _tts() async {
-    if (!CurrentChat.ttsStatus.isNothing) {
-      CurrentChat.ttsStatus = TtsStatus.nothing;
-      ttsClient?.close();
-      ttsClient = null;
-      _player.stop();
+    if (!Current.ttsStatus.isNothing) {
+      ref.read(llmProvider.notifier).stopTts();
       return;
     }
 
-    final text = widget.message.item.text;
+    final message = widget.message;
+    final text = message.item.text;
     if (text.isEmpty) return;
 
-    final tts = Config.tts;
-    final model = tts.model;
-    final voice = tts.voice;
-    final api = Config.apis[tts.api];
-
-    if (model == null || voice == null || api == null) {
+    if (!Config.isOkToTts) {
       Util.showSnackBar(
         context: context,
         content: Text(S.of(context).setup_tts_first),
@@ -422,50 +395,10 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
       return;
     }
 
-    final apiUrl = api.url;
-    final apiKey = api.key;
-    final endPoint = "$apiUrl/audio/speech";
-
-    setState(() => CurrentChat.ttsStatus = TtsStatus.loading);
-
-    try {
-      ttsClient ??= http.Client();
-      final response = await ttsClient!.post(
-        Uri.parse(endPoint),
-        headers: {
-          "Authorization": "Bearer $apiKey",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "model": model,
-          "voice": voice,
-          "stream": false,
-          "input": markdownToText(text),
-        }),
-      );
-
-      if (response.statusCode != 200) {
-        throw "${response.statusCode} ${response.body}";
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final path = Config.audioFilePath("$timestamp.mp3");
-
-      final file = File(path);
-      await file.writeAsBytes(response.bodyBytes);
-
-      if (CurrentChat.ttsStatus.isLoading) {
-        setState(() => CurrentChat.ttsStatus = TtsStatus.playing);
-        await _player.play(DeviceFileSource(path));
-        await _player.onPlayerStateChanged.first;
-      }
-    } catch (e) {
-      if (!CurrentChat.ttsStatus.isNothing && mounted) {
-        Dialogs.error(context: context, error: e);
-      }
+    final error = await ref.read(llmProvider.notifier).tts(message);
+    if (error != null && mounted) {
+      Dialogs.error(context: context, error: error);
     }
-
-    setState(() => CurrentChat.ttsStatus = TtsStatus.nothing);
   }
 
   void _copy() {
@@ -480,22 +413,22 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
   }
 
   void _delete() {
-    if (!CurrentChat.chatStatus.isNothing) return;
-    if (!CurrentChat.ttsStatus.isNothing) return;
+    if (!Current.chatStatus.isNothing) return;
+    if (!Current.ttsStatus.isNothing) return;
 
     final message = widget.message;
     final list = message.list;
     final item = message.item;
 
     if (list.length == 1) {
-      CurrentChat.messages.remove(message);
+      Current.messages.remove(message);
       ref.read(messagesProvider.notifier).notify();
     } else {
       if (item == list.last) message.index--;
       setState(() => list.remove(item));
     }
 
-    CurrentChat.save();
+    Current.save();
   }
 
   void _source() {
@@ -554,19 +487,12 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
   }
 
   Future<void> _reanswer() async {
-    if (!CurrentChat.chatStatus.isNothing) {
-      CurrentChat.chatStatus = ChatStatus.nothing;
-      chatClient?.close();
-      chatClient = null;
+    if (!Current.chatStatus.isNothing) {
+      ref.read(llmProvider.notifier).stopChat();
       return;
     }
 
-    final messages = CurrentChat.messages;
-    final apiUrl = CurrentChat.apiUrl;
-    final apiKey = CurrentChat.apiKey;
-    final model = CurrentChat.model;
-
-    if (apiUrl == null || apiKey == null || model == null) {
+    if (!Current.isOkToChat) {
       Util.showSnackBar(
         context: context,
         content: Text(S.of(context).setup_api_model_first),
@@ -574,57 +500,19 @@ class _MessageWidgetState extends ConsumerState<MessageWidget> {
       return;
     }
 
-    final chatContext = buildChatContext(messages);
-    final item = MessageItem(
+    final message = widget.message;
+    message.list.add(MessageItem(
       text: "",
-      model: CurrentChat.model,
+      model: Current.model,
       role: MessageRole.assistant,
       time: Util.formatDateTime(DateTime.now()),
-    );
+    ));
+    message.index = message.list.length - 1;
+    final error = await ref.read(llmProvider.notifier).chat(message);
 
-    final message = widget.message;
-    setState(() {
-      message.list.add(item);
-      message.index = message.list.length - 1;
-      CurrentChat.chatStatus = ChatStatus.responding;
-    });
-
-    try {
-      chatClient ??= http.Client();
-      final llm = ChatOpenAI(
-        apiKey: apiKey,
-        baseUrl: apiUrl,
-        client: chatClient,
-        defaultOptions: ChatOpenAIOptions(
-          model: model,
-          maxTokens: CurrentChat.maxTokens,
-          temperature: CurrentChat.temperature,
-        ),
-      );
-
-      if (CurrentChat.stream ?? true) {
-        final stream = llm.stream(PromptValue.chat(chatContext));
-        await for (final chunk in stream) {
-          setState(() => item.text += chunk.output.content);
-        }
-      } else {
-        final result = await llm.invoke(PromptValue.chat(chatContext));
-        setState(() => item.text += result.output.content);
-      }
-    } catch (e) {
-      if (CurrentChat.chatStatus.isResponding && mounted) {
-        Dialogs.error(context: context, error: e);
-      }
-      if (item.text.isEmpty) {
-        setState(() {
-          message.list.removeLast();
-          message.index--;
-        });
-      }
+    if (error != null && mounted) {
+      Dialogs.error(context: context, error: error);
     }
-
-    setState(() => CurrentChat.chatStatus = ChatStatus.nothing);
-    CurrentChat.save();
   }
 
   Future<void> _longPress() async {
@@ -814,14 +702,14 @@ class MessageView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.model ?? CurrentChat.model ?? S.current.no_model,
+              item.model ?? Current.model ?? S.current.no_model,
               style: Theme.of(context).textTheme.titleSmall,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               item.time ??
-                  CurrentChat.chat?.time ??
+                  Current.chat?.time ??
                   Util.formatDateTime(DateTime.now()),
               style: Theme.of(context).textTheme.labelSmall,
             ),
@@ -884,7 +772,7 @@ class _MessageEditorState extends ConsumerState<_MessageEditor> {
               message.item.text = _editCtrl.text;
               ref.read(messageProvider(message).notifier).notify();
 
-              CurrentChat.save();
+              Current.save();
               Navigator.of(context).pop();
             },
           ),

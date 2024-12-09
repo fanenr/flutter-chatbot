@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with ChatBot. If not, see <https://www.gnu.org/licenses/>.
 
+import "llm.dart";
 import "chat.dart";
 import "message.dart";
 import "current.dart";
@@ -27,7 +28,6 @@ import "package:flutter/services.dart";
 import "package:langchain/langchain.dart";
 import "package:image_picker/image_picker.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
-import "package:langchain_openai/langchain_openai.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
 
 class InputWidget extends ConsumerStatefulWidget {
@@ -54,8 +54,10 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = CurrentChat.image != null;
-    final isResponding = CurrentChat.chatStatus.isResponding;
+    ref.watch(llmProvider);
+
+    final hasImage = Current.image != null;
+    final isResponding = Current.chatStatus.isResponding;
 
     return Container(
       decoration: BoxDecoration(
@@ -109,8 +111,8 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
   }
 
   Future<void> _addImage() async {
-    if (CurrentChat.image != null) {
-      setState(() => CurrentChat.image = null);
+    if (Current.image != null) {
+      setState(() => Current.image = null);
       return;
     }
 
@@ -182,26 +184,19 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
     }
 
     final bytes = compressed ?? await File(result.path).readAsBytes();
-    setState(() => CurrentChat.image = bytes);
+    setState(() => Current.image = bytes);
   }
 
   Future<void> _sendMessage() async {
-    if (!CurrentChat.chatStatus.isNothing) {
-      CurrentChat.chatStatus = ChatStatus.nothing;
-      client?.close();
-      client = null;
+    if (!Current.chatStatus.isNothing) {
+      ref.read(llmProvider.notifier).stopChat();
       return;
     }
 
     final text = _inputCtrl.text;
     if (text.isEmpty) return;
 
-    final messages = CurrentChat.messages;
-    final apiUrl = CurrentChat.apiUrl;
-    final apiKey = CurrentChat.apiKey;
-    final model = CurrentChat.model;
-
-    if (apiUrl == null || apiKey == null || model == null) {
+    if (!Current.isOkToChat) {
       Util.showSnackBar(
         context: context,
         content: Text(S.of(context).setup_api_model_first),
@@ -209,74 +204,28 @@ class _InputWidgetState extends ConsumerState<InputWidget> {
       return;
     }
 
+    final messages = Current.messages;
     messages.add(Message.fromItem(MessageItem(
       text: text,
       role: MessageRole.user,
-      image: CurrentChat.image,
+      image: Current.image,
     )));
-
-    final chatContext = buildChatContext(messages);
-    final item = MessageItem(
+    messages.add(Message.fromItem(MessageItem(
       text: "",
-      model: CurrentChat.model,
+      model: Current.model,
       role: MessageRole.assistant,
       time: Util.formatDateTime(DateTime.now()),
-    );
-    final assistant = Message.fromItem(item);
-
-    messages.add(assistant);
+    )));
     ref.read(messagesProvider.notifier).notify();
 
-    setState(() {
-      _inputCtrl.clear();
-      CurrentChat.image = null;
-      CurrentChat.chatStatus = ChatStatus.responding;
-    });
+    _inputCtrl.clear();
+    Current.image = null;
+    final message = messages.last;
+    final error = await ref.read(llmProvider.notifier).chat(message);
 
-    try {
-      client ??= Client();
-      final llm = ChatOpenAI(
-        client: client,
-        apiKey: apiKey,
-        baseUrl: apiUrl,
-        defaultOptions: ChatOpenAIOptions(
-          model: model,
-          maxTokens: CurrentChat.maxTokens,
-          temperature: CurrentChat.temperature,
-        ),
-      );
-
-      if (CurrentChat.stream ?? true) {
-        final stream = llm.stream(PromptValue.chat(chatContext));
-        await for (final chunk in stream) {
-          item.text += chunk.output.content;
-          ref.read(messageProvider(assistant).notifier).notify();
-        }
-      } else {
-        final result = await llm.invoke(PromptValue.chat(chatContext));
-        item.text += result.output.content;
-        ref.read(messageProvider(assistant).notifier).notify();
-      }
-    } catch (e) {
-      if (CurrentChat.chatStatus.isResponding && mounted) {
-        Dialogs.error(context: context, error: e);
-      }
-      if (item.text.isEmpty) {
-        messages.length -= 2;
-        _inputCtrl.text = text;
-        ref.read(messagesProvider.notifier).notify();
-      }
-    }
-
-    setState(() => CurrentChat.chatStatus = ChatStatus.nothing);
-    ref.read(messageProvider(assistant).notifier).notify();
-
-    final hasFile = CurrentChat.hasFile;
-    CurrentChat.save();
-
-    if (!hasFile) {
-      ref.read(chatsProvider.notifier).notify();
-      ref.read(chatProvider.notifier).notify();
+    if (error != null && mounted) {
+      _inputCtrl.text = text;
+      Dialogs.error(context: context, error: error);
     }
   }
 }
@@ -288,8 +237,8 @@ List<ChatMessage> buildChatContext(List<Message> list) {
   ];
   if (items.last.role.isAssistant) items.removeLast();
 
-  if (CurrentChat.systemPrompts != null) {
-    context.add(ChatMessage.system(CurrentChat.systemPrompts!));
+  if (Current.systemPrompts != null) {
+    context.add(ChatMessage.system(Current.systemPrompts!));
   }
 
   for (final item in items) {
