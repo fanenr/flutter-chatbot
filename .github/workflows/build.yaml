@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch: # 手动触发
 
 permissions:
   contents: write
@@ -54,4 +55,53 @@ jobs:
           files: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/flutter-apk/app-release.apk.sha1
+          body: ${{ steps.changelog.outputs.latest }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:flutter-version: 3.24.5
+
+      - name: Build Windows
+        run: |
+          flutter pub get
+          flutter build windows
+
+      - name: Release Windows
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/windows/runner/Release/*.exe
+          body: ${{ steps.changelog.outputs.latest }}
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.5
+
+      - name: Build Linux
+        run: |
+          flutter pub get
+          flutter build linux
+
+      - name: Release Linux
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/linux/runner/release/*.AppImage
           body: ${{ steps.changelog.outputs.latest }}
